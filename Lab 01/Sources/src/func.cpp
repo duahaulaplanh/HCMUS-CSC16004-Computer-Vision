@@ -18,6 +18,7 @@ Image::Image(const cv::Mat& img)
 Image Image::ReadImg(std::string imgPath)
 {
     std::string path = std::string(SOURCE_PATH) + imgPath;
+
     cv::Mat data = cv::imread(path);
 
     // check if reading image properly
