@@ -70,6 +70,13 @@ int main(int argc, char const *argv[])
         original.Show("Original");
         newImg.Show("Laplace Detect");
     }
+    else if (cmd == "-harris")
+    {
+        newImg = original.HarrisCornerDetect(0.04);
+        newImg.Write(output);
+        original.Show("Original");
+        newImg.Show("Harris Corner Detect");
+    }
 
     cv::waitKey(0);
     cv::destroyAllWindows();

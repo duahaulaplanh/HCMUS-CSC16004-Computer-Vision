@@ -2,6 +2,7 @@
 #define FUNC_HPP
 
 #include <opencv2/opencv.hpp>
+#include <tuple>
 
 class Image
 {
@@ -21,6 +22,7 @@ public:
     Image GaussianFilter(int k);
     Image SobelDetect();
     Image LaplaceDetect();
+    Image HarrisCornerDetect(double k);
 
 private:
     cv::Mat data;
@@ -72,6 +74,8 @@ private:
 
         return sum;
     }
+
+    std::pair<cv::Mat, cv::Mat> CalculateGradientSobel();
 };
 
 #endif // FUNC_HPP
