@@ -10,7 +10,7 @@ Image::Image()
 {}
 
 Image::Image(const cv::Mat& img)
-: data(img.clone())
+: data(img)
 , rows(img.rows)
 , cols(img.cols)
 , channels(img.channels())
@@ -18,7 +18,7 @@ Image::Image(const cv::Mat& img)
 
 Image Image::ReadImg(std::string imgPath)
 {
-    std::string path = std::string(SOURCE_PATH) + imgPath;
+    std::string path = imgPath;
 
     cv::Mat data = cv::imread(path);
 
@@ -31,7 +31,7 @@ Image Image::ReadImg(std::string imgPath)
 
 void Image::Write(std::string imgPath)
 {
-    std::string path = std::string(SOURCE_PATH) + imgPath;
+    std::string path = imgPath;
     cv::imwrite(path, data);    
 }
 
@@ -414,7 +414,7 @@ Image Image::HarrisCornerDetect(double k)
         }
     }
 
-    Image newImg(data);
+    Image newImg(data.clone());
 
     for (auto const& point : cornerPoints)
     {
