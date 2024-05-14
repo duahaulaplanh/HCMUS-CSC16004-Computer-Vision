@@ -468,3 +468,110 @@ std::pair<cv::Mat, cv::Mat> Image::CalculateGradientSobel()
 
     return std::make_pair(dx, dy);
 }
+
+Image Image::MatchingImgSIFT(const Image& object, const Image& scene)
+{
+    cv::Mat obj = object.data.clone();
+    cv::Mat sc = scene.data.clone();
+
+    std::vector<cv::KeyPoint> kpObj, kpScene;
+    cv::Mat descObj, descScene;
+
+    // Step 1: Detect keypoints and compute descriptors
+
+    // create sift feature
+    cv::Ptr<cv::SIFT> sift = cv::SIFT::create();
+
+    // detect keypoint
+    sift->detectAndCompute(obj, cv::noArray(), kpObj, descObj);
+    sift->detectAndCompute(sc, cv::noArray(), kpScene, descScene);
+    
+    // Step 2: find best matches (use k-nn)
+    auto matches = Image::Matching(descObj, descScene, 0.75);
+
+    // draw matches
+    cv::Mat imgMatches;
+    cv::drawMatches(obj, 
+                    kpObj, 
+                    sc, 
+                    kpScene, 
+                    matches, 
+                    imgMatches, 
+                    cv::Scalar::all(-1),
+                    cv::Scalar::all(-1), 
+                    std::vector<char>(), 
+                    cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+
+    // Step 3: Find Homography
+
+    // localize the object
+    std::vector<cv::Point2f> objPoint;
+    std::vector<cv::Point2f> scenePoint;
+
+    for (size_t i=0; i < matches.size(); i++)
+    {
+        objPoint.push_back(kpObj[matches[i].queryIdx].pt);
+        scenePoint.push_back(kpScene[matches[i].trainIdx].pt);
+    }
+
+    // draw
+    Image::DrawHomography(imgMatches, objPoint, scenePoint, obj);
+
+    return imgMatches;
+}
+
+std::vector<cv::DMatch> Image::Matching(const cv::Mat& descObj, const cv::Mat& descScene, float threshold)
+{
+    cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
+
+    std::vector< std::vector<cv::DMatch> > knn_matches;
+
+    matcher->knnMatch(descObj, descScene, knn_matches, 2);
+
+    std::vector<cv::DMatch> goodMatches;
+    for (size_t i = 0; i < knn_matches.size(); i++)
+    {
+        if (knn_matches[i][0].distance < threshold * knn_matches[i][1].distance)
+            goodMatches.push_back(knn_matches[i][0]);
+    }
+
+    return goodMatches;
+}
+
+void Image::DrawHomography(cv::Mat& imgMatches, const std::vector<cv::Point2f>& objPoint, const std::vector<cv::Point2f>& scenePoint, const cv::Mat& img_object)
+{
+    cv::Mat H = cv::findHomography(objPoint, scenePoint, cv::RANSAC);
+
+    // Get the corners from the object image (template)
+    std::vector<cv::Point2f> obj_corners(4);
+    obj_corners[0] = cv::Point2f(0, 0);
+    obj_corners[1] = cv::Point2f((float)img_object.cols, 0);
+    obj_corners[2] = cv::Point2f((float)img_object.cols, (float)img_object.rows);
+    obj_corners[3] = cv::Point2f(0, (float)img_object.rows);
+    
+    // Get the corners from the scene image
+    std::vector<cv::Point2f> scene_corners(4);
+    cv::perspectiveTransform(obj_corners, scene_corners, H);
+
+    // Step 4: Draw lines between the corners (the mapped object in the scene - sceneImg )
+    cv::line(imgMatches,
+             scene_corners[0] + cv::Point2f((float)img_object.cols, 0),
+             scene_corners[1] + cv::Point2f((float)img_object.cols, 0), 
+             cv::Scalar(0, 255, 0), 
+             4);
+    cv::line(imgMatches, 
+             scene_corners[1] + cv::Point2f((float)img_object.cols, 0), 
+             scene_corners[2] + cv::Point2f((float)img_object.cols, 0), 
+             cv::Scalar( 0, 255, 0), 
+             4);
+    cv::line(imgMatches, 
+             scene_corners[2] + cv::Point2f((float)img_object.cols, 0), 
+             scene_corners[3] + cv::Point2f((float)img_object.cols, 0), 
+             cv::Scalar( 0, 255, 0), 
+             4);
+    cv::line(imgMatches, 
+             scene_corners[3] + cv::Point2f((float)img_object.cols, 0), 
+             scene_corners[0] + cv::Point2f((float)img_object.cols, 0), 
+             cv::Scalar( 0, 255, 0), 
+             4);    
+}

@@ -77,6 +77,20 @@ int main(int argc, char const *argv[])
         original.Show("Original");
         newImg.Show("Harris Corner Detect");
     }
+    else if (cmd == "-sift")
+    {
+        std::string sceneInput = output;
+        output = std::string(argv[4]);
+
+        Image scene = Image::ReadImg(sceneInput);
+        newImg = Image::MatchingImgSIFT(original, scene);
+
+        original.Show("Template");
+        scene.Show("Scene");
+
+        newImg.Write(output);
+        newImg.Show("Matching");
+    }
 
     cv::waitKey(0);
     cv::destroyAllWindows();

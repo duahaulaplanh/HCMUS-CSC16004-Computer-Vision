@@ -3,6 +3,15 @@
 
 #include <opencv2/opencv.hpp>
 #include <tuple>
+#include <vector>
+
+#ifdef HAVE_OPENCV_XFEATURES2D
+#include "opencv2/xfeatures2d.hpp"
+#include <opencv2/imgproc.hpp>
+#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/calib3d/calib3d.hpp"
+#endif
 
 class Image
 {
@@ -23,6 +32,16 @@ public:
     Image SobelDetect();
     Image LaplaceDetect();
     Image HarrisCornerDetect(double k);
+
+#ifdef HAVE_OPENCV_XFEATURES2D
+    static Image MatchingImgSIFT(const Image& object, const Image& scene);
+
+    // Matching descriptor vectors with a FLANN based matcher
+    static std::vector<cv::DMatch> Matching(const cv::Mat& descObj, const cv::Mat& descScene, float threshold);
+
+    // Draw line between matching point (homography)
+    static void DrawHomography(cv::Mat& imgMatches, const std::vector<cv::Point2f>& objPoint, const std::vector<cv::Point2f>& scenePoint, const cv::Mat& object);
+#endif
 
 private:
     cv::Mat data;
